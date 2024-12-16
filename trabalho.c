@@ -184,8 +184,15 @@ bool queue_empty(queue_t *q) {
 }
 
 
-void bfs(int **matriz, int inicio, int destino,int n){
+void bfs(int **matriz, int inicio,int n){
     
+    if (inicio < 0 || inicio >= n) {
+        fprintf(stderr, "Erro: índice inicial ou destino fora dos limites.\n");
+        return;
+    }
+
+    inicio -= 1;
+
     int *visited = calloc (n,sizeof(int));
 
     queue_t *q;
@@ -198,11 +205,11 @@ void bfs(int **matriz, int inicio, int destino,int n){
     {
         int v = queue_front(q);
         queue_pop(q);
-        printf("%d ", v);
+        printf("%d ", v+1);
 
-        for (int i = 0; i < destino; i++)
+        for (int i = 0; i < n; i++)
         {
-            if (matriz[v][i] == 1 && !visited[i])
+            if (matriz[v][i] == 1 && visited[i] == 0)
             {
                 queue_push(q,i);
                 visited[i] = 1;
@@ -221,7 +228,6 @@ void bfs(int **matriz, int inicio, int destino,int n){
 }
 
 void qtd_componentes(int **matriz, int n){
-    
 
 }
 
@@ -244,11 +250,11 @@ int main(int argc, char* argv[]) {
     int **matriz_adjacencia = read_graph(arq, n);
     fclose(arq);
 
-    //bfs(matriz_adjacencia,0,2,n);
+    bfs(matriz_adjacencia,3,n);
 
     //show_info_graph(matriz_adjacencia, n);
 
-    show_graph_as_list(matriz_adjacencia,n);
+    //show_graph_as_list(matriz_adjacencia,n);
 
     // Libera a memória alocada para a matriz
     for (int i = 0; i < n; i++) {
