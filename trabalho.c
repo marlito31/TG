@@ -186,7 +186,7 @@ bool queue_empty(queue_t *q) {
 
 void bfs(int **matriz, int inicio,int n){
     
-    if (inicio < 0 || inicio >= n) {
+    if (inicio <= 0 || inicio >= n) {
         fprintf(stderr, "Erro: índice inicial ou destino fora dos limites.\n");
         return;
     }
@@ -223,20 +223,69 @@ void bfs(int **matriz, int inicio,int n){
     queue_delete(&q);
 
     free(visited);
-
-
 }
 
-void qtd_componentes(int **matriz, int n){
+void qtd_componentes(int **matriz, int n) {
+    int *visited = calloc(n, sizeof(int));
+    if (!visited) {
+        fprintf(stderr, "Erro de alocação de memória.\n");
+        return;
+    }
 
+    int componentes = 0;        // Contador de componentes conexos
+    int maior_tamanho = 0;      // Tamanho do maior componente
+    int menor_tamanho = n;      // Tamanho do menor componente
+
+    queue_t *q;
+    queue_initialize(&q);
+
+    for (int i = 0; i < n; i++) {
+        if (!visited[i]) {
+            componentes++;
+            int tamanho_atual = 0;
+
+            // BFS para explorar o componente conexo atual
+            queue_push(q, i);
+            visited[i] = 1;
+
+            while (!queue_empty(q)) {
+                int v = queue_front(q);
+                queue_pop(q);
+                tamanho_atual++;
+
+                for (int j = 0; j < n; j++) {
+                    if (matriz[v][j] == 1 && !visited[j]) {
+                        queue_push(q, j);
+                        visited[j] = 1;
+                    }
+                }
+            }
+
+            // Atualiza maior e menor componente
+            if (tamanho_atual > maior_tamanho) {
+                maior_tamanho = tamanho_atual;
+            }
+            if (tamanho_atual < menor_tamanho) {
+                menor_tamanho = tamanho_atual;
+            }
+        }
+    }
+
+    queue_delete(&q);
+    free(visited);
+
+    // Exibe os resultados
+    printf("Número de componentes conexos: %d\n", componentes);
+    printf("Maior componente tem %d vértices\n", maior_tamanho);
+    printf("Menor componente tem %d vértices\n", menor_tamanho);
 }
 
 
-int main(int argc, char* argv[]) {
+int main() {
     
     FILE *arq = fopen("in.txt", "r");
     if (!arq) {
-        fprintf(stderr, "Erro ao abrir o arquivo %s.\n", argv[1]);
+        fprintf(stderr, "Erro ao abrir o arquivo.\n");
         return 1;
     }
 
@@ -250,13 +299,16 @@ int main(int argc, char* argv[]) {
     int **matriz_adjacencia = read_graph(arq, n);
     fclose(arq);
 
-    bfs(matriz_adjacencia,3,n);
+    qtd_componentes(matriz_adjacencia,n);
+
+    //bfs(matriz_adjacencia,3,n);
 
     //show_info_graph(matriz_adjacencia, n);
 
     //show_graph_as_list(matriz_adjacencia,n);
 
-    // Libera a memória alocada para a matriz
+    //Libera a memória alocada para a matriz
+
     for (int i = 0; i < n; i++) {
         free(matriz_adjacencia[i]);
     }
