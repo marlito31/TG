@@ -191,9 +191,10 @@ bool queue_empty(queue_t *q) {
 }
 
 
-void bfs(int **matriz, int inicio, int n) {
-    if (inicio <= 0 || inicio > n) {
-        fprintf(stderr, "Erro: índice inicial fora dos limites.\n");
+void bfs(int **matriz, int inicio,int n){
+    
+    if (inicio <= 0 || inicio >= n) {
+        fprintf(stderr, "Erro: índice inicial ou destino fora dos limites.\n");
         return;
     }
 
@@ -338,7 +339,6 @@ void dfs(int **matriz, int inicio, int n) {
     free(parent);
     free(level);
 }
-
 
 
 int main() {
