@@ -66,39 +66,46 @@ void show_info_graph(int** matriz, int n) {
     free(grau); // Libera a memória alocada para o vetor grau
 }
 
-void show_graph_as_list(int **matriz, int n){
-    FILE *arq = fopen("lista.txt","w");
+void show_graph_as_list(int **matriz, int n) {
+    FILE *out = fopen("lista.txt", "w");
+    if (!out) {
+        fprintf(stderr, "Erro ao abrir o arquivo lista.txt.\n");
+        return;
+    }
 
-    for (int i = 0; i < n; ++i) {
-        fprintf(arq,"Vertice %d:", i+1);
-        for (int j = 0; j < n; ++j) {
+    fprintf(out, "Lista de adjacência:\n");
+    for (int i = 0; i < n; i++) {
+        fprintf(out, "%d ->", i + 1);
+        for (int j = 0; j < n; j++) {
             if (matriz[i][j] == 1) {
-                fprintf(arq," %d", j+1);
+                fprintf(out, " %d", j + 1);
             }
         }
-        fprintf(arq,"\n");
+        fprintf(out, "\n");
     }
-    
+
+    fclose(out);
 }
 
-void show_graph_as_matrix(int **matriz,int n){
-    FILE *arq = fopen("matriz.txt","w");
 
-    fprintf(arq,"  ");
-    for (int j = 0; j < n; j++) {
-        fprintf(arq,"%5d ", j+1);
+void show_graph_as_matrix(int **matriz, int n) {
+    FILE *out = fopen("matriz.txt", "w");
+    if (!out) {
+        fprintf(stderr, "Erro ao abrir o arquivo matriz.txt.\n");
+        return;
     }
-    fprintf(arq,"\n");
 
+    fprintf(out, "Matriz de adjacência:\n");
     for (int i = 0; i < n; i++) {
-        fprintf(arq,"%d ",i+1);
         for (int j = 0; j < n; j++) {
-            fprintf(arq,"%5d ", matriz[i][j]);
+            fprintf(out, "%d ", matriz[i][j]);
         }
-        fprintf(arq,"\n");
+        fprintf(out, "\n");
     }
-    fclose(arq);
+
+    fclose(out);
 }
+
 
 typedef struct queue_t {
     int front;
@@ -184,59 +191,161 @@ bool queue_empty(queue_t *q) {
 }
 
 
-void bfs(int **matriz, int inicio,int n){
+void bfs(int **matriz, int inicio, int n) {
+    if (inicio <= 0 || inicio > n) {
+        fprintf(stderr, "Erro: índice inicial fora dos limites.\n");
+        return;
+    }
+
+    inicio -= 1; // Ajusta para índice 0 baseado
+    int *visited = calloc(n, sizeof(int));
+    int *parent = calloc(n, sizeof(int));
+    int *level = calloc(n, sizeof(int));
+    FILE *out = fopen("bfs_output.txt", "w");
     
-    if (inicio < 0 || inicio >= n) {
-        fprintf(stderr, "Erro: índice inicial ou destino fora dos limites.\n");
+    if (!visited || !parent || !level || !out) {
+        fprintf(stderr, "Erro de alocação de memória ou ao abrir o arquivo.\n");
+        free(visited);
+        free(parent);
+        free(level);
+        fclose(out);
+        return;
+    }
+
+    // Inicializa arrays
+    for (int i = 0; i < n; i++) {
+        parent[i] = -1; // -1 indica que não há pai
+        level[i] = -1;  // -1 indica que não foi visitado
+    }
+
+    int *queue = malloc(n * sizeof(int));
+    if (!queue) {
+        fprintf(stderr, "Erro de alocação de memória.\n");
+        free(visited);
+        free(parent);
+        free(level);
+        fclose(out);
+        return;
+    }
+
+    int front = 0, rear = 0;
+    queue[rear++] = inicio;
+    visited[inicio] = 1;
+    level[inicio] = 0;
+
+    while (front < rear) {
+        int v = queue[front++];
+        for (int i = 0; i < n; i++) {
+            if (matriz[v][i] == 1 && !visited[i]) {
+                visited[i] = 1;
+                parent[i] = v;
+                level[i] = level[v] + 1;
+                queue[rear++] = i;
+            }
+        }
+    }
+
+    // Salva resultados no arquivo
+    fprintf(out, "Vértice Pai Nível\n");
+    for (int i = 0; i < n; i++) {
+        fprintf(out, "%d       %d   %d\n", i + 1, parent[i] == -1 ? -1 : parent[i] + 1, level[i]);
+    }
+
+    fclose(out);
+    free(queue);
+    free(visited);
+    free(parent);
+    free(level);
+}
+
+
+int qtd_componentes(int **matriz, int n) {
+    int *visited = calloc(n, sizeof(int));
+    if (!visited) {
+        fprintf(stderr, "Erro de alocação de memória.\n");
+        return 0;
+    }
+
+    void dfs_count(int v) {
+        visited[v] = 1;
+        for (int i = 0; i < n; i++) {
+            if (matriz[v][i] == 1 && !visited[i]) {
+                dfs_count(i);
+            }
+        }
+    }
+
+    int componentes = 0;
+    for (int i = 0; i < n; i++) {
+        if (!visited[i]) {
+            componentes++;
+            dfs_count(i);
+        }
+    }
+
+    free(visited);
+    return componentes;
+}
+
+
+void dfs(int **matriz, int inicio, int n) {
+    if (inicio <= 0 || inicio > n) {
+        fprintf(stderr, "Erro: índice inicial fora dos limites.\n");
         return;
     }
 
     inicio -= 1;
-
-    int *visited = calloc (n,sizeof(int));
-
-    queue_t *q;
-    queue_initialize(&q);
-    queue_push(q,inicio);
-
-    visited[inicio] = 1;
-
-    while (!queue_empty(q))
-    {
-        int v = queue_front(q);
-        queue_pop(q);
-        printf("%d ", v+1);
-
-        for (int i = 0; i < n; i++)
-        {
-            if (matriz[v][i] == 1 && visited[i] == 0)
-            {
-                queue_push(q,i);
-                visited[i] = 1;
-            }
-            
-        }
-        
-    }
-    printf("\n");
+    int *visited = calloc(n, sizeof(int));
+    int *parent = calloc(n, sizeof(int));
+    int *level = calloc(n, sizeof(int));
+    FILE *out = fopen("dfs_output.txt", "w");
     
-    queue_delete(&q);
+    if (!visited || !parent || !level || !out) {
+        fprintf(stderr, "Erro de alocação de memória ou ao abrir o arquivo.\n");
+        free(visited);
+        free(parent);
+        free(level);
+        fclose(out);
+        return;
+    }
 
+    for (int i = 0; i < n; i++) {
+        parent[i] = -1;
+        level[i] = -1;
+    }
+
+    void dfs_recursive(int v, int current_level) {
+        visited[v] = 1;
+        level[v] = current_level;
+        
+        for (int i = 0; i < n; i++) {
+            if (matriz[v][i] == 1 && !visited[i]) {
+                parent[i] = v;
+                dfs_recursive(i, current_level + 1);
+            }
+        }
+    }
+
+    dfs_recursive(inicio, 0);
+
+    fprintf(out, "Vértice Pai Nível\n");
+    for (int i = 0; i < n; i++) {
+        fprintf(out, "%d       %d   %d\n", i + 1, parent[i] == -1 ? -1 : parent[i] + 1, level[i]);
+    }
+
+    fclose(out);
     free(visited);
-
-
-}
-
-void qtd_componentes(int **matriz, int n){
-
+    free(parent);
+    free(level);
 }
 
 
-int main(int argc, char* argv[]) {
+
+int main() {
     
     FILE *arq = fopen("in.txt", "r");
     if (!arq) {
-        fprintf(stderr, "Erro ao abrir o arquivo %s.\n", argv[1]);
+        fprintf(stderr, "Erro ao abrir o arquivo.\n");
         return 1;
     }
 
@@ -250,13 +359,20 @@ int main(int argc, char* argv[]) {
     int **matriz_adjacencia = read_graph(arq, n);
     fclose(arq);
 
+    qtd_componentes(matriz_adjacencia,n);
+
     bfs(matriz_adjacencia,3,n);
+    
+    dfs(matriz_adjacencia, 1, n);
 
-    //show_info_graph(matriz_adjacencia, n);
+    show_info_graph(matriz_adjacencia, n);
 
-    //show_graph_as_list(matriz_adjacencia,n);
+    show_graph_as_matrix(matriz_adjacencia,n);
 
-    // Libera a memória alocada para a matriz
+    show_graph_as_list(matriz_adjacencia,n);
+
+    //Libera a memória alocada para a matriz
+
     for (int i = 0; i < n; i++) {
         free(matriz_adjacencia[i]);
     }
