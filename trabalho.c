@@ -339,6 +339,168 @@ void dfs(int **matriz, int inicio, int n) {
     free(level);
 }
 
+void componentes_tamanhos(int **matriz, int n, int *maior, int *menor) {
+    int *visited = calloc(n, sizeof(int));
+    if (!visited) {
+        fprintf(stderr, "Erro de alocação de memória.\n");
+        return;
+    }
+
+    int componente_tamanho;
+    *maior = 0;
+    *menor = n;
+
+    void dfs_count_size(int v, int *size) {
+        visited[v] = 1;
+        (*size)++;
+        for (int i = 0; i < n; i++) {
+            if (matriz[v][i] == 1 && !visited[i]) {
+                dfs_count_size(i, size);
+            }
+        }
+    }
+
+    for (int i = 0; i < n; i++) {
+        if (!visited[i]) {
+            componente_tamanho = 0;
+            dfs_count_size(i, &componente_tamanho);
+
+            if (componente_tamanho > *maior) {
+                *maior = componente_tamanho;
+            }
+            if (componente_tamanho < *menor) {
+                *menor = componente_tamanho;
+            }
+        }
+    }
+
+    free(visited);
+}
+
+int bfs_max_distance(int **matriz, int inicio, int n) {
+    inicio -= 1; // Ajusta para índice baseado em 0
+    int *visited = calloc(n, sizeof(int));
+    int *level = calloc(n, sizeof(int));
+
+    if (!visited || !level) {
+        fprintf(stderr, "Erro de alocação de memória.\n");
+        free(visited);
+        free(level);
+        return -1;
+    }
+
+    for (int i = 0; i < n; i++) {
+        level[i] = -1; // Inicializa níveis como não visitados
+    }
+
+    int *queue = malloc(n * sizeof(int));
+    if (!queue) {
+        fprintf(stderr, "Erro de alocação de memória.\n");
+        free(visited);
+        free(level);
+        return -1;
+    }
+
+    int front = 0, rear = 0;
+    queue[rear++] = inicio;
+    visited[inicio] = 1;
+    level[inicio] = 0;
+
+    while (front < rear) {
+        int v = queue[front++];
+        for (int i = 0; i < n; i++) {
+            if (matriz[v][i] == 1 && !visited[i]) {
+                visited[i] = 1;
+                level[i] = level[v] + 1;
+                queue[rear++] = i;
+            }
+        }
+    }
+
+    // Encontra o maior nível (maior distância)
+    int max_distance = 0;
+    for (int i = 0; i < n; i++) {
+        if (level[i] > max_distance) {
+            max_distance = level[i];
+        }
+    }
+
+    free(queue);
+    free(visited);
+    free(level);
+    return max_distance;
+}
+
+void calculate_max_distances(int **matriz, int n) {
+    int max_global_distance = 0;
+
+    for (int i = 1; i <= n; i++) {
+        int max_distance = bfs_max_distance(matriz, i, n);
+        printf("Maior distância a partir do vértice %d: %d\n", i, max_distance);
+        if (max_distance > max_global_distance) {
+            max_global_distance = max_distance;
+        }
+    }
+
+    printf("Maior distância global: %d\n", max_global_distance);
+}
+
+
+int calculate_diameter(int **matriz, int n) {
+    int max_diameter = 0; // Inicializa o diâmetro como 0
+    int *dist = calloc(n, sizeof(int)); // Array para armazenar distâncias
+
+    if (!dist) {
+        fprintf(stderr, "Erro de alocação de memória.\n");
+        return -1;
+    }
+
+    // Função para executar a BFS e retornar a maior distância
+    int bfs_distance(int start) {
+        for (int i = 0; i < n; i++) {
+            dist[i] = -1; // -1 indica que o vértice ainda não foi visitado
+        }
+
+        dist[start] = 0;
+        int *queue = malloc(n * sizeof(int));
+        int front = 0, rear = 0;
+
+        if (!queue) {
+            fprintf(stderr, "Erro de alocação de memória.\n");
+            free(dist);
+            return -1;
+        }
+
+        queue[rear++] = start;
+        int max_dist = 0;
+
+        while (front < rear) {
+            int v = queue[front++];
+            for (int i = 0; i < n; i++) {
+                if (matriz[v][i] == 1 && dist[i] == -1) {
+                    dist[i] = dist[v] + 1;
+                    max_dist = (dist[i] > max_dist) ? dist[i] : max_dist;
+                    queue[rear++] = i;
+                }
+            }
+        }
+
+        free(queue);
+        return max_dist;
+    }
+
+    // Calcula o maior caminho mínimo para cada vértice
+    for (int i = 0; i < n; i++) {
+        int local_max = bfs_distance(i);
+        if (local_max > max_diameter) {
+            max_diameter = local_max;
+        }
+    }
+
+    free(dist);
+    return max_diameter;
+}
+
 
 
 int main() {
@@ -359,19 +521,34 @@ int main() {
     int **matriz_adjacencia = read_graph(arq, n);
     fclose(arq);
 
-    qtd_componentes(matriz_adjacencia,n);
-
     bfs(matriz_adjacencia,3,n);
     
     dfs(matriz_adjacencia, 1, n);
 
     show_info_graph(matriz_adjacencia, n);
 
-    show_graph_as_matrix(matriz_adjacencia,n);
+    // show_graph_as_matrix(matriz_adjacencia,n);
 
     show_graph_as_list(matriz_adjacencia,n);
 
-    //Libera a memória alocada para a matriz
+    // int componentes = qtd_componentes(matriz_adjacencia,n);
+    // printf("Número de componentes conexos: %d\n", componentes);
+
+    // int maior_componente, menor_componente;
+    // componentes_tamanhos(matriz_adjacencia, n, &maior_componente, &menor_componente);
+    // printf("Maior componente: %d vértices\n", maior_componente);
+    // printf("Menor componente: %d vértices\n", menor_componente);
+
+
+    calculate_max_distances(matriz_adjacencia, n);
+
+//     int diameter = calculate_diameter(matriz_adjacencia, n);
+// if (diameter != -1) {
+//     printf("O diâmetro do grafo é: %d\n", diameter);
+// } else {
+//     printf("Erro ao calcular o diâmetro.\n");
+// }
+
 
     for (int i = 0; i < n; i++) {
         free(matriz_adjacencia[i]);
