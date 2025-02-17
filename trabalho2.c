@@ -28,6 +28,11 @@ Graph* create_graph(int n) {
 }
 
 void add_edge(Graph* graph, int v1, int v2, int peso) {
+    if (peso < 0) {
+        fprintf(stderr, "Erro: Arestas com pesos negativos não são permitidas.\n");
+        return;
+    }
+    
     Node* new_node = malloc(sizeof(Node));
     new_node->vertex = v2;
     new_node->peso = peso;
@@ -65,6 +70,10 @@ Graph* read_graph(FILE* arq) {
     Graph* graph = create_graph(n);
 
     while (fscanf(arq, "%d %d %d", &v1, &v2, &peso) == 3) {
+        if (peso < 0) {
+            fprintf(stderr, "Erro: Peso negativo detectado na aresta (%d, %d) com peso %d.\n", v1, v2, peso);
+            continue;
+        }
         if (v1 > 0 && v1 <= n && v2 > 0 && v2 <= n) {
             add_edge(graph, v1 - 1, v2 - 1, peso);
         } else {
